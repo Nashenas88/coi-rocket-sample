@@ -203,7 +203,9 @@ dependencies = [
 
 [[package]]
 name = "coi-rocket"
-version = "0.1.0"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3b750205b1547d9a229ba6e49f13556d1750cbabf9a72051ba557d730ad437f1"
 dependencies = [
  "async-trait",
  "coi",
@@ -214,6 +216,8 @@ dependencies = [
 [[package]]
 name = "coi-rocket-derive"
 version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "08c5c59f45cf50f07801e2fd3f4c8dc30bce081e2e695f06c84f87a984bd64e3"
 dependencies = [
  "proc-macro2",
  "quote",

@@ -2,12 +2,13 @@
 name = "xtask"
 version = "0.1.0"
 authors = ["Paul Daniel Faria <Nashenas88@users.noreply.github.com>"]
-edition = "2018"
+edition = "2021"
 
 [dependencies]
-structopt = "0.3"
-rs-docker = "0.0.58"
-postgres = "0.17"
+bollard = "0.15.0"
+clap = { version = "4.4.8", features = ["derive"] }
+tokio-postgres = "0.7.10"
 thiserror = "1.0"
+tokio = { version = "1.0.0", features = ["macros"] }
 
 [workspace]

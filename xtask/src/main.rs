@@ -1,16 +1,16 @@
-use postgres::{Client, NoTls, Error as PostgresError};
-use rs_docker::Docker;
+use bollard::{Docker, API_DEFAULT_VERSION};
+use clap::Parser;
 use std::{
     io::{self, ErrorKind},
     process::{Child, Command, ExitStatus},
     thread,
     time::Duration,
 };
-use structopt::StructOpt;
 use thiserror::Error;
+use tokio_postgres::{Client, Error as PostgresError, NoTls};
 
-#[derive(StructOpt)]
-#[structopt(
+#[derive(Parser)]
+#[clap(
     about = "Each subcommand listed below will run the subcommand before it, in this order:
 build, run, init, seed
 
@@ -18,13 +18,13 @@ Once init or seed has been run, you can just call the run subcommand and reuse
 the existing data."
 )]
 enum Step {
-    #[structopt(about = "Build the postgres docker image")]
+    #[clap(about = "Build the postgres docker image")]
     Build,
-    #[structopt(about = "Run the postgres docker image")]
+    #[clap(about = "Run the postgres docker image")]
     Run,
-    #[structopt(about = "Initialize the database in the postgres docker image")]
+    #[clap(about = "Initialize the database in the postgres docker image")]
     Init,
-    #[structopt(about = "Seed dummy data to the postgres docker image")]
+    #[clap(about = "Seed dummy data to the postgres docker image")]
     Seed,
 }
 
@@ -35,6 +35,9 @@ enum XtaskError {
 
     #[error("Postgres error: {0}")]
     Postgres(#[from] PostgresError),
+
+    #[error("Failed to connect to Docker: {0}")]
+    Docker(#[from] bollard::errors::Error),
 
     #[error("Command `{0}` did not exit: {1}")]
     Exit(String, ExitStatus),
@@ -47,102 +50,95 @@ type Result<T> = std::result::Result<T, XtaskError>;
 
 const DOCKER_COMMAND: &str = "docker";
 const DOCKER_URI: &str = "unix:///var/run/docker.sock";
-const DOCKER_IMAGE_NAME: &str = "coi-rocket-sample-postgres";
+const DOCKER_IMAGE_NAME: &str = "postgres:latest";
 
 fn build_step() -> Result<()> {
     let mut command = build()?;
     success_check(command.wait(), DOCKER_COMMAND)
 }
 
-fn run_step() -> Result<()> {
-    let mut docker = Docker::connect(DOCKER_URI)?;
-    let images = docker.get_images(false)?;
-    if !images.iter().any(|i| i.Id == DOCKER_IMAGE_NAME) {
+async fn run_step() -> Result<()> {
+    let docker = Docker::connect_with_socket(DOCKER_URI, 120, API_DEFAULT_VERSION)?;
+    let images = docker.list_images::<String>(None).await?;
+    if !images.iter().any(|i| i.id == DOCKER_IMAGE_NAME) {
         build_step()?;
     }
     let mut command = run()?;
     success_check(command.wait(), DOCKER_COMMAND)
 }
 
-fn init_step() -> Result<()> {
-    let mut docker = Docker::connect(DOCKER_URI)?;
-    let containers = docker.get_containers(false)?;
+async fn init_step() -> Result<()> {
+    let docker = Docker::connect_with_socket(DOCKER_URI, 120, API_DEFAULT_VERSION)?;
+    let containers = docker.list_containers::<String>(None).await?;
     let container = containers
         .iter()
-        .filter(|c| c.Image == DOCKER_IMAGE_NAME)
-        .next();
-    if let Some(_container) = container {
-        let mut client = make_client()?;
-        init_db(&mut client)
+        .find(|c| c.image.as_deref() == Some(DOCKER_IMAGE_NAME));
+    if container.is_some() {
+        let mut client = make_client().await?;
+        init_db(&mut client).await
     } else {
-        let images = docker.get_images(false)?;
+        let images = docker.list_images::<String>(None).await?;
         if !images.iter().any(|i| {
-            i.RepoTags
+            i.repo_tags
                 .iter()
-                .any(|t| t == &format!("{}:latest", DOCKER_IMAGE_NAME))
+                .any(|t| t == &format!("{}:alpine-12", DOCKER_IMAGE_NAME))
         }) {
             build_step()?;
         }
         let mut command = run()?;
-        let handle = thread::spawn(move || {
+        let handle = tokio::spawn(async move {
             thread::sleep(Duration::from_secs(5));
-            let mut client = make_client()?;
-            init_db(&mut client)
+            let mut client = make_client().await?;
+            init_db(&mut client).await
         });
-        if let Err(e) = handle.join() {
+        if let Ok(Err(e)) = handle.await {
             command.kill().map_err(Into::<XtaskError>::into)?;
-            match e.downcast::<XtaskError>() {
-                Ok(e) => Err(*e),
-                Err(e) => Err(XtaskError::Unknown(format!("{:?}", e)))
-            }
+            Err(XtaskError::Unknown(format!("{:?}", e)))
         } else {
             Ok(())
         }
     }
 }
 
-fn seed_step() -> Result<()> {
-    let mut docker = Docker::connect(DOCKER_URI)?;
-    let containers = docker.get_containers(false)?;
+async fn seed_step() -> Result<()> {
+    let docker = Docker::connect_with_socket(DOCKER_URI, 120, API_DEFAULT_VERSION)?;
+    let containers = docker.list_containers::<String>(None).await?;
     let container = containers
         .iter()
-        .filter(|c| c.Image == DOCKER_IMAGE_NAME)
-        .next();
-    if let Some(_container) = container {
-        let mut client = make_client()?;
-        init_db(&mut client)?;
-        seed(&mut client)
+        .find(|c| c.image.as_deref() == Some(DOCKER_IMAGE_NAME));
+    if container.is_some() {
+        let mut client = make_client().await?;
+        init_db(&mut client).await?;
+        seed(&mut client).await
     } else {
-        let images = docker.get_images(false)?;
-        if !images.iter().any(|i| i.Id == DOCKER_IMAGE_NAME) {
+        let images = docker.list_images::<String>(None).await?;
+        if !images.iter().any(|i| i.id == DOCKER_IMAGE_NAME) {
             build_step()?;
         }
         let mut command = run()?;
-        let handle = thread::spawn(move || {
+        let handle = tokio::spawn(async move {
             thread::sleep(Duration::from_secs(5));
-            let mut client = make_client()?;
-            init_db(&mut client)?;
-            seed(&mut client)
+            let mut client = make_client().await?;
+            init_db(&mut client).await?;
+            seed(&mut client).await
         });
-        if let Err(e) = handle.join() {
+        if let Ok(Err(e)) = handle.await {
             command.kill().map_err(Into::<XtaskError>::into)?;
-            match e.downcast::<XtaskError>() {
-                Ok(e) => Err(*e),
-                Err(e) => Err(XtaskError::Unknown(format!("{:?}", e)))
-            }
+            Err(XtaskError::Unknown(format!("{:?}", e)))
         } else {
             Ok(())
         }
     }
 }
 
-fn main() {
-    let step = Step::from_args();
+#[tokio::main]
+async fn main() {
+    let step = Step::parse();
     if let Err(e) = match step {
         Step::Build => build_step(),
-        Step::Run => run_step(),
-        Step::Init => init_step(),
-        Step::Seed => seed_step(),
+        Step::Run => run_step().await,
+        Step::Init => init_step().await,
+        Step::Seed => seed_step().await,
     } {
         eprintln!("Failed to run step: {}", e);
     }
@@ -180,10 +176,8 @@ fn success_check(res: io::Result<ExitStatus>, command: &str) -> Result<()> {
 
 fn build() -> Result<Child> {
     Command::new("docker")
+        .arg("compose")
         .arg("build")
-        .arg(".")
-        .arg("-t")
-        .arg(DOCKER_IMAGE_NAME)
         .spawn()
         .map_err(check_not_found("docker"))
         .map_err(Into::into)
@@ -191,23 +185,44 @@ fn build() -> Result<Child> {
 
 fn run() -> Result<Child> {
     Command::new("docker")
-        .arg("run")
-        .arg("-p")
-        .arg("45432:5432")
-        .arg(DOCKER_IMAGE_NAME)
+        .arg("compose")
+        .arg("up")
+        .arg("-d")
         .spawn()
         .map_err(check_not_found("docker"))
         .map_err(Into::into)
 }
 
-fn make_client() -> Result<Client> {
-    Client::connect("host=127.0.0.1 dbname=docker port=45432 user=docker password=docker", NoTls).map_err(Into::into)
+async fn make_client() -> Result<Client> {
+    let (client, connection) = tokio_postgres::connect(
+        &format!(
+            "host=127.0.0.1 dbname={} port=5432 user={} password={}",
+            std::env::var("POSTGRES_DB").unwrap(),
+            std::env::var("POSTGRES_USER").unwrap(),
+            std::env::var("POSTGRES_PW").unwrap(),
+        ),
+        NoTls,
+    )
+    .await
+    .map_err(XtaskError::from)?;
+
+    tokio::spawn(async move {
+        if let Err(e) = connection.await {
+            eprintln!("connection error: {}", e);
+        }
+    });
+
+    Ok(client)
 }
 
-fn init_db(client: &mut Client) -> Result<()> {
-    client.batch_execute(include_str!("sql/init.sql")).map_err(Into::into)
+async fn init_db(client: &mut Client) -> Result<()> {
+    let commands = include_str!("sql/init.sql");
+    client.batch_execute(commands).await.map_err(Into::into)
 }
 
-fn seed(client: &mut Client) -> Result<()> {
-    client.batch_execute(include_str!("sql/seed.sql")).map_err(Into::into)
+async fn seed(client: &mut Client) -> Result<()> {
+    client
+        .batch_execute(include_str!("sql/seed.sql"))
+        .await
+        .map_err(Into::into)
 }
