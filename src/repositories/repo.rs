@@ -1,7 +1,8 @@
 use crate::{
     models::data::Data,
     // postgres::PostgresPool,
-    repositories::error::Error};
+    repositories::error::Error,
+};
 use async_trait::async_trait;
 use coi::Inject;
 // use mobc_postgres::tokio_postgres::NoTls;
@@ -15,11 +16,11 @@ pub struct DbData {
     name: String,
 }
 
-impl Into<Data> for DbData {
-    fn into(self) -> Data {
-        Data {
-            id: self.id,
-            name: self.name,
+impl From<DbData> for Data {
+    fn from(data: DbData) -> Self {
+        Self {
+            id: data.id,
+            name: data.name,
         }
     }
 }
@@ -31,7 +32,7 @@ pub trait IRepository: Inject {
 }
 
 #[derive(Inject)]
-#[coi(provides pub dyn IRepository with Repository{})]//::new(pool))]
+#[coi(provides pub dyn IRepository with Repository{})] //::new(pool))]
 struct Repository {
     // #[coi(inject)]
     // pool: Arc<PostgresPool<NoTls>>,
@@ -42,7 +43,7 @@ impl IRepository for Repository {
     async fn get(&self, id: i64) -> Result<DbData, Error> {
         Ok(DbData {
             id,
-            name: String::from("Paul")
+            name: String::from("Paul"),
         })
         // let client = self.pool.get().await?;
         // let statement = client
@@ -54,12 +55,10 @@ impl IRepository for Repository {
     }
 
     async fn get_all(&self) -> Result<Vec<DbData>, Error> {
-        Ok(vec![
-            DbData {
-                id: 0,
-                name: String::from("Paul")
-            }
-        ])
+        Ok(vec![DbData {
+            id: 0,
+            name: String::from("Paul"),
+        }])
         // let client = self.pool.get().await?;
         // let statement = client.prepare("SELECT id, name FROM data LIMIT 50").await?;
         // let rows = client.query(&statement, &[]).await?;

@@ -1,14 +1,14 @@
-use rocket::Rocket;
+use rocket::{Build, Rocket};
 
 pub trait RocketExt {
     fn route(self, config: impl RouteConfig) -> Self;
 }
 
 pub trait RouteConfig {
-    fn mount(&self, rocket: Rocket) -> Rocket;
+    fn mount(&self, rocket: Rocket<Build>) -> Rocket<Build>;
 }
 
-impl RocketExt for Rocket {
+impl RocketExt for Rocket<Build> {
     fn route(self, config: impl RouteConfig) -> Self {
         config.mount(self)
     }

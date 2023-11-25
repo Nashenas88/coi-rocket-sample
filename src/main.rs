@@ -1,13 +1,9 @@
-#![feature(decl_macro)]
-#![feature(proc_macro_hygiene)]
-
+#[macro_use]
+extern crate rocket;
 use crate::{
     // postgres::PostgresPoolProvider,
     repositories::repo::RepositoryProvider,
-    routes::{
-        data::DataRoutes,
-        traits::RocketExt as _,
-    },
+    routes::{data::DataRoutes, traits::RocketExt as _},
     services::service::ServiceProvider,
 };
 use coi::container;
@@ -20,7 +16,8 @@ mod repositories;
 mod routes;
 mod services;
 
-fn main() -> Result<(), String> {
+#[launch]
+fn rocket() -> _ {
     std::env::set_var("RUST_LOG", "actix_server=debug,actix_web=debug");
     env_logger::init();
 
@@ -54,12 +51,7 @@ fn main() -> Result<(), String> {
             .expect("Cannot write graph to dot file");
     }
 
-    rocket::ignite()
-        .route(DataRoutes)
-        .manage(container)
-        .launch();
-
-    Ok(())
+    rocket::build().manage(container).route(DataRoutes)
 
     // HttpServer::new(move || {
     //     App::new()
