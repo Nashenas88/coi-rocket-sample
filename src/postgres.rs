@@ -5,7 +5,7 @@ use mobc_postgres::{
 };
 
 #[derive(Inject)]
-pub struct PostgresPool<T>(Pool<PgConnectionManager<T>>)
+pub(crate) struct PostgresPool<T>(Pool<PgConnectionManager<T>>)
 where
     PgConnectionManager<T>: Manager;
 
@@ -13,7 +13,7 @@ impl<T> PostgresPool<T>
 where
     PgConnectionManager<T>: Manager,
 {
-    pub async fn get(
+    pub(crate) async fn get(
         &self,
     ) -> Result<
         Connection<PgConnectionManager<T>>,
@@ -25,7 +25,7 @@ where
 
 #[derive(Provide)]
 #[coi(provides PostgresPool<T> with PostgresPool(self.0.clone()))]
-pub struct PostgresPoolProvider<T>(Pool<PgConnectionManager<T>>)
+pub(crate) struct PostgresPoolProvider<T>(Pool<PgConnectionManager<T>>)
 where
     PgConnectionManager<T>: Manager;
 
@@ -33,7 +33,7 @@ impl<T> PostgresPoolProvider<T>
 where
     PgConnectionManager<T>: Manager,
 {
-    pub fn new(pool: Pool<PgConnectionManager<T>>) -> Self {
+    pub(crate) fn new(pool: Pool<PgConnectionManager<T>>) -> Self {
         Self(pool)
     }
 }

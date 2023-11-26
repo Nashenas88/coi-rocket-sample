@@ -4,13 +4,13 @@ use coi::Inject;
 use std::sync::Arc;
 
 #[async_trait]
-pub trait IService: Inject {
+pub(crate) trait IService: Inject {
     async fn get(&self, id: i64) -> Result<Data, Error>;
     async fn get_all(&self) -> Result<Vec<Data>, Error>;
 }
 
 #[derive(Inject)]
-#[coi(provides pub dyn IService with Service::new(repository))]
+#[coi(provides pub(crate) dyn IService with Service::new(repository))]
 struct Service {
     #[coi(inject)]
     repository: Arc<dyn IRepository>,

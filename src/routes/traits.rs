@@ -1,10 +1,10 @@
 use rocket::{Build, Rocket};
 
-pub trait RocketExt {
+pub(crate) trait RocketExt {
     fn route(self, config: impl RouteConfig) -> Self;
 }
 
-pub trait RouteConfig {
+pub(crate) trait RouteConfig {
     fn mount(&self, rocket: Rocket<Build>) -> Rocket<Build>;
 }
 

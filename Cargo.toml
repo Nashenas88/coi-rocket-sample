@@ -11,7 +11,7 @@ publish = false
 [dependencies]
 async-trait = "0.1.24"
 coi = "0.10.2"
-coi-rocket = { version = "0.2.0" }
+coi-rocket = "0.2.0"
 env_logger = "0.10.1"
 futures = "0.3.4"
 log = "0.4.8"
@@ -19,7 +19,7 @@ mobc-postgres = "0.8.0"
 rocket = { version = "0.5.0", features = ["json"] }
 tokio-postgres = "0.7.10"
 serde = { version = "1.0.104", features = ["derive"] }
-thiserror = { version = "1.0.50", default-features = false }
+thiserror = "1.0.50"
 
 [features]
 default = []

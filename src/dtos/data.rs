@@ -2,7 +2,7 @@ use crate::models::data::Data;
 use serde::Serialize;
 
 #[derive(Serialize)]
-pub struct DataDto {
+pub(crate) struct DataDto {
     id: i64,
     name: String,
 }

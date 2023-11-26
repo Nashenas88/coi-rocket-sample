@@ -1,35 +1,40 @@
 #[macro_use]
 extern crate rocket;
 use crate::{
-    // postgres::PostgresPoolProvider,
+    postgres::PostgresPoolProvider,
     repositories::repo::RepositoryProvider,
     routes::{data::DataRoutes, traits::RocketExt as _},
     services::service::ServiceProvider,
 };
 use coi::container;
-// use mobc_postgres::{mobc::Pool, tokio_postgres::NoTls, PgConnectionManager};
+use mobc_postgres::{mobc::Pool, tokio_postgres::NoTls, PgConnectionManager};
 
 mod dtos;
 mod models;
-// mod postgres;
+mod postgres;
 mod repositories;
 mod routes;
 mod services;
 
 #[launch]
 fn rocket() -> _ {
-    std::env::set_var("RUST_LOG", "actix_server=debug,actix_web=debug");
     env_logger::init();
 
-    // let config = "host=127.0.0.1 dbname=docker port=45432 user=docker password=docker"
-    //     .parse()
-    //     .map_err(|e| format!("{}", e))?;
-    // let manager = PgConnectionManager::new(config, NoTls);
-    // let pool = Pool::builder().max_open(20).build(manager);
-    // let pool_provider = PostgresPoolProvider::new(pool);
+    let config = format!(
+        "host=127.0.0.1 dbname={} port=5432 user={} password={}",
+        std::env::var("POSTGRES_DB").unwrap(),
+        std::env::var("POSTGRES_USER").unwrap(),
+        std::env::var("POSTGRES_PW").unwrap(),
+    )
+    .parse()
+    .map_err(|e| format!("{}", e))
+    .unwrap();
+    let manager = PgConnectionManager::new(config, NoTls);
+    let pool = Pool::builder().max_open(20).build(manager);
+    let pool_provider = PostgresPoolProvider::new(pool);
 
     let container = container! {
-        // pool => pool_provider; singleton,
+        pool => pool_provider; singleton,
         service => ServiceProvider; scoped,
         repository => RepositoryProvider; scoped,
     };
@@ -52,17 +57,4 @@ fn rocket() -> _ {
     }
 
     rocket::build().manage(container).route(DataRoutes)
-
-    // HttpServer::new(move || {
-    //     App::new()
-    //         .app_data(container.clone())
-    //         .wrap(middleware::Compress::default())
-    //         .wrap(middleware::Logger::default())
-    //         .configure(routes::data::route_config)
-    // })
-    // .bind("127.0.0.1:8000")
-    // .map_err(|e| format!("{}", e))?
-    // .run()
-    // .await
-    // .map_err(|e| format!("{}", e))
 }
