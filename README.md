@@ -35,12 +35,13 @@ You should see an output similar to:
 ```
 CONTAINER ID   IMAGE                   COMMAND                  CREATED          STATUS          PORTS                                            NAMES
 2b0163af5aef   dpage/pgadmin4:latest   "/entrypoint.sh"         29 minutes ago   Up 29 minutes   443/tcp, 0.0.0.0:5050->80/tcp, :::5050->80/tcp   pgadmin
-891533a5a77a   postgres:latest         "docker-entrypoint.s…"   29 minutes ago   Up 29 minutes   0.0.0.0:5432->5432/tcp, :::5432->5432/tcp        postgres```
+891533a5a77a   postgres:latest         "docker-entrypoint.s…"   29 minutes ago   Up 29 minutes   0.0.0.0:5432->5432/tcp, :::5432->5432/tcp        postgres
+```
 
 ## Running
 
 ```
-cargo run --release
+(source .env && cargo run --release)
 ```
 
 And visit http://localhost:8000/data

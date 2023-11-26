@@ -180,9 +180,9 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
 name = "coi"
-version = "0.10.2"
+version = "0.10.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "56764bc1a9ad66867f71fe5745322b6046da57dc01297e2747c9d440fad0d83a"
+checksum = "bee0c32a76f766748344ea7828f727f170e2eb34a8750dc0bdc4aa7043d460c5"
 dependencies = [
  "coi-derive",
  "petgraph",
@@ -192,20 +192,20 @@ dependencies = [
 
 [[package]]
 name = "coi-derive"
-version = "0.10.0"
+version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "00069026ef32ab93e3b2263ed19bac4336ea63b710b14767a6db75eefc8a4652"
+checksum = "529e47e39280dd69f7062fd4a163de8e80998964ca5d4e02981d618a5c8cad37"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 1.0.109",
+ "syn 2.0.39",
 ]
 
 [[package]]
 name = "coi-rocket"
-version = "0.2.0"
+version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3b750205b1547d9a229ba6e49f13556d1750cbabf9a72051ba557d730ad437f1"
+checksum = "42acd37a3f781a984088b2886a0d250e549fcce6ffa218abbce0c0e25b97507e"
 dependencies = [
  "async-trait",
  "coi",
@@ -215,13 +215,13 @@ dependencies = [
 
 [[package]]
 name = "coi-rocket-derive"
-version = "0.1.0"
+version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "08c5c59f45cf50f07801e2fd3f4c8dc30bce081e2e695f06c84f87a984bd64e3"
+checksum = "0cfeb8a3a7c1b771763ad76667ab4e6e3a77e6fb4285ee814559d38451017b6e"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 1.0.109",
+ "syn 2.0.39",
 ]
 
 [[package]]
@@ -574,9 +574,9 @@ dependencies = [
 
 [[package]]
 name = "hashbrown"
-version = "0.14.2"
+version = "0.14.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f93e7192158dbcda357bdec5fb5788eebf8bbac027f3f33e719d29135ae84156"
+checksum = "290f1a1d9242c78d09ce40a5e87e7554ee637af1351968159f4952f028f75604"
 
 [[package]]
 name = "hermit-abi"
@@ -1047,9 +1047,9 @@ checksum = "5b40af805b3121feab8a3c29f04d8ad262fa8e0561883e7653e024ae4479e6de"
 
 [[package]]
 name = "proc-macro2"
-version = "1.0.69"
+version = "1.0.70"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "134c189feb4956b20f6f547d2cf727d4c0fe06722b20a0eec87ed445a97f92da"
+checksum = "39278fbbf5fb4f646ce651690877f89d1c5811a3d4acb27700c1cb3cdb78fd3b"
 dependencies = [
  "unicode-ident",
 ]
